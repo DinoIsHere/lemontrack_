@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lemontrack_/screens/today/today_screen.dart';
 import 'package:lemontrack_/data/repositories/block_repository.dart';
 import 'package:lemontrack_/domain/models/time_block.dart';
@@ -12,14 +11,6 @@ Iterable<String> allText(WidgetTester tester) sync* {
   }
 }
 
-final _router = GoRouter(
-  initialLocation: '/today',
-  routes: [
-    GoRoute(path: '/today', builder: (_, __) => const TodayScreen()),
-    GoRoute(path: '/block/new', builder: (_, __) => const Scaffold(body: Center(child: Text('editor')))),
-  ],
-);
-
 void main() {
   testWidgets('created block shows up on today screen', (WidgetTester tester) async {
     final repo = MemoryBlockRepository();
@@ -29,9 +20,7 @@ void main() {
         overrides: [
           blockRepositoryProvider.overrideWithValue(repo),
         ],
-        child: MaterialApp.router(
-          routerConfig: _router,
-        ),
+        child: const MaterialApp(home: TodayScreen()),
       ),
     );
 

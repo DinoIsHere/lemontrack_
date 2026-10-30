@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../../data/repositories/block_repository.dart';
 import '../../domain/models/time_block.dart';
 import '../../theme/lt_colors.dart';
+import '../today/today_screen.dart' show selectedDayProvider;
 
 class BlockEditorScreen extends ConsumerStatefulWidget {
   final String? id;
@@ -115,7 +116,8 @@ class _BlockEditorScreenState extends ConsumerState<BlockEditorScreen> {
     final min = int.parse(parts[1]);
     final dur = int.parse(_durCtrl.text);
     final now = DateTime.now();
-    final startLocal = DateTime(now.year, now.month, now.day, hour, min);
+    final day = _existing != null ? _existing!.startUtc.toLocal() : ref.read(selectedDayProvider);
+    final startLocal = DateTime(day.year, day.month, day.day, hour, min);
     final startUtc = startLocal.toUtc();
     final endUtc = startUtc.add(Duration(minutes: dur));
     

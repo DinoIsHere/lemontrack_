@@ -7,21 +7,56 @@ import '../../widgets/crypto/ticker_strip.dart';
 import '../../widgets/crypto/day_timeline.dart';
 import '../../domain/models/time_block.dart';
 
+/// Day currently shown on the Today screen.
+final selectedDayProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
+
 class TodayScreen extends ConsumerWidget {
   const TodayScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
-    // Stable day key — DateTime.now() with microseconds would spawn a new
-    // provider on every rebuild and keep the screen stuck in loading.
     final today = DateTime(now.year, now.month, now.day);
-    final blocksAsync = ref.watch(blocksForDayProvider(today));
+    final selected = ref.watch(selectedDayProvider);
+    final blocksAsync = ref.watch(blocksForDayProvider(selected));
+    final isToday = selected.year == today.year && selected.month == today.month && selected.day == today.day;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: LTColors.ink,
-        title: Text('${_weekday(today)} ${today.day}', style: Theme.of(context).textTheme.headlineMedium),
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: LTColors.ash),
+              tooltip: 'Previous day',
+              onPressed: () => ref.read(selectedDayProvider.notifier).state = selected.subtract(const Duration(days: 1)),
+            ),
+            GestureDetector(
+              onTap: () => ref.read(selectedDayProvider.notifier).state = today,
+              child: Text(
+                isToday ? '${_weekday(selected)} ${selected.day}' : '${_weekday(selected)} ${selected.day}/${selected.month}',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ),
+            if (!isToday)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: TextButton(
+                  onPressed: () => ref.read(selectedDayProvider.notifier).state = today,
+                  child: const Text('TODAY', style: TextStyle(fontSize: 10, letterSpacing: 0.8, color: LTColors.lemon)),
+                ),
+              ),
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: LTColors.ash),
+              tooltip: 'Next day',
+              onPressed: () => ref.read(selectedDayProvider.notifier).state = selected.add(const Duration(days: 1)),
+            ),
+          ],
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.settings), onPressed: () => context.push('/settings')),
         ],
@@ -48,18 +83,34 @@ class TodayScreen extends ConsumerWidget {
                         children: [
                           const Icon(Icons.grid_on, size: 64, color: LTColors.ash),
                           const SizedBox(height: 16),
-                          const Text('Nothing planned. Ask the chat or tap + to add a block.', style: TextStyle(color: LTColors.ash)),
+                          Text(
+                            isToday
+                                ? 'Nothing planned. Ask the chat or tap + to add a block.'
+                                : 'Nothing on ${_weekday(selected)} ${selected.day}/${selected.month}.',
+                            style: const TextStyle(color: LTColors.ash),
+                          ),
                           const SizedBox(height: 16),
-                          FilledButton(
-                            onPressed: () => context.go('/chat'),
-                            child: const Text('Open Chat'),
+                          Wrap(
+                            spacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              if (!isToday)
+                                OutlinedButton(
+                                  onPressed: () => ref.read(selectedDayProvider.notifier).state = today,
+                                  child: const Text('Back to today'),
+                                ),
+                              FilledButton(
+                                onPressed: () => context.go('/chat'),
+                                child: const Text('Open Chat'),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     )
                   : DayTimeline(
                       blocks: blocks,
-                      day: today,
+                      day: selected,
                       onBlockTap: (block) => context.push('/block/${block.id}'),
                       onBlockLongPress: (block) => context.push('/focus/${block.id}'),
                     ),

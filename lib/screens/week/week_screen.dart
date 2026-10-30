@@ -5,7 +5,7 @@ import '../../domain/scheduling/conflict.dart';
 import '../../theme/lt_colors.dart';
 import '../../theme/lt_text.dart';
 import '../../util/time.dart';
-import '../today/today_screen.dart' show allBlocksStreamProvider;
+import '../today/today_screen.dart' show allBlocksStreamProvider, selectedDayProvider;
 
 class WeekScreen extends ConsumerWidget {
   const WeekScreen({super.key});
@@ -60,7 +60,10 @@ class WeekScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         GestureDetector(
-                          onTap: () => context.go('/today'),
+                          onTap: () {
+                            ref.read(selectedDayProvider.notifier).state = day;
+                            context.go('/today');
+                          },
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 4),
                             child: Row(
