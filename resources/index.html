@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>LemonTrack</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#0B0B0C;--void:#050505;--graphite:#141416;--slate:#1C1C20;--steel:#26262B;
+--paper:#F5F5F0;--ash:#9A9AA3;--wire:#2E2E35;--wireSoft:#1F1F25;
+--lemon:#FFD60A;--lemonDeep:#3A3200;--lemonSoft:#FFF3B0;--ember:#FF9F0A;
+--coral:#FF453A;--up:#30D158;--tickerBg:#0F0F12;--gridLine:#1A1A1F;
+--catDeep:#FFD60A;--catMeet:#64D2FF;--catStudy:#BF5AF2;--catHealth:#30D158;--catAdmin:#AC8E68;--catPersonal:#FF9F0A;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;background:var(--bg);color:var(--paper);font-family:'Inter',system-ui,sans-serif;overflow:hidden;}
+body{display:flex;flex-direction:column;}
+.mono{font-family:'JetBrains Mono',monospace;}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--wire);background:var(--bg);}
+.brand{color:var(--lemon);font-weight:700;letter-spacing:2px;font-size:14px;}
+.totals{display:flex;gap:18px;padding:8px 16px;border-bottom:1px solid var(--wire);background:var(--tickerBg);font-size:12px;}
+.totals .item{display:flex;flex-direction:column;}
+.totals .label{color:var(--ash);font-size:10px;letter-spacing:.8px;text-transform:uppercase;}
+.totals .val{color:var(--lemon);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px;}
+main{flex:1;overflow:hidden;position:relative;}
+.view{display:none;height:100%;overflow:auto;}
+.view.active{display:block;}
+nav{display:flex;border-top:1px solid var(--wire);background:var(--graphite);}
+nav button{flex:1;background:none;border:none;color:var(--ash);padding:10px 4px;font-size:11px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;font-family:inherit;}
+nav button.active{color:var(--lemon);}
+nav button .ic{display:block;font-size:18px;margin-bottom:2px;}
+.timeline{padding:0 8px 80px;position:relative;min-height:100%;}
+.hourrow{position:relative;height:60px;border-bottom:1px dashed var(--wireSoft);}
+.hourlabel{position:absolute;left:4px;top:2px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ash);}
+.block{position:absolute;left:52px;right:8px;background:var(--graphite);border:1px solid var(--wire);border-radius:12px;padding:6px 8px;font-size:12px;cursor:grab;user-select:none;overflow:hidden;}
+.block.done{opacity:.6;}
+.block.inprog{border-color:var(--lemon);box-shadow:0 0 12px rgba(255,214,10,.25);}
+.block.conflict{border-color:var(--coral);}
+.block .catbar{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:12px 0 0 12px;}
+.block .title{font-weight:600;font-size:12px;margin-left:6px;}
+.block .time{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ash);margin-left:6px;}
+.nowline{position:absolute;left:48px;right:0;height:2px;background:var(--lemon);z-index:5;pointer-events:none;}
+.nowdot{position:absolute;left:42px;width:8px;height:8px;border-radius:50%;background:var(--lemon);z-index:5;pointer-events:none;}
+.fab{position:fixed;right:16px;bottom:70px;background:linear-gradient(135deg,var(--lemon),var(--ember));color:#0B0B0C;border:none;border-radius:20px;padding:12px 18px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(255,214,10,.3);}
+.hero{margin:12px;padding:14px;background:var(--graphite);border:1px solid var(--wire);border-radius:20px;}
+.hero .label{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--ash);}
+.hero .val{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:700;color:var(--lemon);margin:4px 0;}
+.hero .sub{font-size:12px;color:var(--ash);}
+.chat{display:flex;flex-direction:column;height:100%;}
+.chat-log{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px;}
+.bubble{max-width:85%;padding:10px 12px;border-radius:16px;font-size:13px;line-height:1.4;}
+.bubble.user{align-self:flex-end;background:var(--lemonDeep);color:var(--lemonSoft);border:1px solid var(--lemon);}
+.bubble.assistant{align-self:flex-start;background:var(--graphite);border:1px solid var(--wire);}
+.diffcard{align-self:flex-start;background:#1a1400;border:1px solid var(--lemonDeep);border-radius:12px;padding:10px 12px;font-size:12px;max-width:90%;}
+.diffcard .action{color:var(--lemon);font-weight:700;margin-bottom:4px;}
+.diffcard .row{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ash);margin:2px 0;}
+.diffcard .conflict{color:var(--coral);}
+.diffcard button{background:var(--coral);color:#fff;border:none;border-radius:6px;padding:4px 10px;margin-top:6px;cursor:pointer;font-size:11px;}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--wire);}
+.chip{background:var(--steel);color:var(--paper);border:1px solid var(--wire);border-radius:12px;padding:6px 10px;font-size:11px;cursor:pointer;}
+.chip:hover{border-color:var(--lemon);color:var(--lemon);}
+.chat-input{display:flex;border-top:1px solid var(--wire);}
+.chat-input input{flex:1;background:var(--steel);color:var(--paper);border:none;padding:12px;font-family:inherit;font-size:13px;}
+.chat-input button{background:var(--lemon);color:#0B0B0C;border:none;padding:12px 18px;font-weight:700;cursor:pointer;}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:50;}
+.modal-backdrop.open{display:flex;}
+.modal{background:var(--slate);border:1px solid var(--wire);border-radius:20px;padding:18px;width:min(420px,92vw);max-height:90vh;overflow:auto;}
+.modal h3{margin-bottom:12px;color:var(--lemon);}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11px;color:var(--ash);margin-bottom:4px;text-transform:uppercase;letter-spacing:.6px;}
+.field input,.field select,.field textarea{width:100%;background:var(--steel);color:var(--paper);border:1px solid var(--wire);border-radius:12px;padding:10px;font-family:inherit;font-size:13px;}
+.field textarea{min-height:60px;resize:vertical;}
+.btnrow{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;}
+.btn{border:none;border-radius:12px;padding:10px 16px;font-weight:600;cursor:pointer;font-family:inherit;}
+.btn.primary{background:var(--lemon);color:#0B0B0C;}
+.btn.secondary{background:var(--steel);color:var(--paper);}
+.btn.danger{background:var(--coral);color:#fff;}
+.catrow{display:flex;gap:6px;flex-wrap:wrap;}
+.catpill{padding:6px 10px;border-radius:12px;border:1px solid var(--wire);background:var(--steel);color:var(--paper);font-size:11px;cursor:pointer;}
+.catpill.active{border-color:var(--lemon);background:var(--lemonDeep);color:var(--lemonSoft);}
+.weekgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:12px;}
+.weekcol{background:var(--graphite);border:1px solid var(--wire);border-radius:12px;padding:6px;min-height:200px;}
+.weekcol .dayname{font-size:10px;color:var(--ash);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.wblock{background:var(--steel);border-left:3px solid var(--lemon);border-radius:6px;padding:4px 6px;margin-bottom:4px;font-size:10px;}
+.wblock .wt{font-family:'JetBrains Mono',monospace;color:var(--ash);}
+.summary{padding:12px;}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.statcard{background:var(--graphite);border:1px solid var(--wire);border-radius:20px;padding:12px;}
+.statcard .sl{font-size:10px;color:var(--ash);text-transform:uppercase;letter-spacing:.6px;}
+.statcard .sv{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--lemon);margin:4px 0;}
+.statcard .sd{font-size:11px;color:var(--ash);}
+.candles{display:flex;align-items:flex-end;gap:4px;height:120px;padding:8px 0;border-bottom:1px solid var(--wire);}
+.candle{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;}
+.candle .bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;}
+.candle .lbl{font-size:8px;color:var(--ash);margin-top:4px;}
+.catbarrow{display:flex;align-items:center;gap:8px;margin:6px 0;}
+.catbarrow .cname{font-size:11px;width:90px;color:var(--ash);}
+.catbarrow .cbar{flex:1;height:8px;background:var(--steel);border-radius:4px;overflow:hidden;}
+.catbarrow .cfill{height:100%;border-radius:4px;}
+.catbarrow .cmin{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ash);width:50px;text-align:right;}
+.focusoverlay{position:fixed;inset:0;background:var(--bg);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;}
+.focusoverlay.open{display:flex;}
+.ring{width:220px;height:220px;position:relative;}
+.ring svg{transform:rotate(-90deg);}
+.ring .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.ring .time{font-family:'JetBrains Mono',monospace;font-size:40px;font-weight:700;color:var(--lemon);}
+.ring .sub{font-size:12px;color:var(--ash);}
+.focuscontrols{display:flex;gap:12px;margin-top:24px;}
+.empty{padding:40px 20px;text-align:center;color:var(--ash);font-size:13px;}
+.empty button{margin-top:12px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">LEMONTRACK</div>
+  <div id="dateLabel" class="mono" style="font-size:12px;color:var(--ash)"></div>
+</header>
+<div class="totals">
+  <div class="item"><span class="label">Planned</span><span class="val" id="tPlanned">0m</span></div>
+  <div class="item"><span class="label">Tracked</span><span class="val" id="tTracked">0m</span></div>
+  <div class="item"><span class="label">Blocks</span><span class="val" id="tCount">0</span></div>
+  <div class="item"><span class="label">Focus</span><span class="val" id="tFocus">0%</span></div>
+</div>
+<main>
+  <section id="vToday" class="view active">
+    <div class="hero">
+      <div class="label">Next block</div>
+      <div class="val" id="nextTitle">—</div>
+      <div class="sub" id="nextSub">No upcoming block</div>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+  <section id="vWeek" class="view"><div class="weekgrid" id="weekgrid"></div></section>
+  <section id="vChat" class="view">
+    <div class="chat">
+      <div class="chat-log" id="chatLog"></div>
+      <div class="chips" id="chips"></div>
+      <div class="chat-input"><input id="chatInput" placeholder="move deep work to 15:30"/><button onclick="sendChat()">SEND</button></div>
+    </div>
+  </section>
+  <section id="vSummary" class="view"><div class="summary" id="summary"></div></section>
+</main>
+<nav>
+  <button class="active" data-view="vToday" onclick="switchView('vToday',this)"><span class="ic">📅</span>Today</button>
+  <button data-view="vWeek" onclick="switchView('vWeek',this)"><span class="ic">🗓</span>Week</button>
+  <button data-view="vChat" onclick="switchView('vChat',this)"><span class="ic">✨</span>Chat</button>
+  <button data-view="vSummary" onclick="switchView('vSummary',this)"><span class="ic">📊</span>Summary</button>
+</nav>
+<button class="fab" onclick="openEditor()">+ Add block</button>
+
+<div class="modal-backdrop" id="editorBackdrop">
+  <div class="modal">
+    <h3 id="editorTitle">New block</h3>
+    <div class="field"><label>Title</label><input id="eTitle"/></div>
+    <div class="field"><label>Category</label><div class="catrow" id="eCats"></div></div>
+    <div class="field"><label>Start (HH:MM)</label><input id="eStart" placeholder="09:00"/></div>
+    <div class="field"><label>Duration (min)</label><input id="eDur" type="number" value="30"/></div>
+    <div class="field"><label>Notes</label><textarea id="eNotes"></textarea></div>
+    <div id="eConflict" style="color:var(--coral);font-size:12px;margin-bottom:8px;"></div>
+    <div class="btnrow">
+      <button class="btn secondary" onclick="closeEditor()">Cancel</button>
+      <button class="btn danger" id="eDelete" style="display:none" onclick="deleteEditing()">Delete</button>
+      <button class="btn primary" onclick="saveEditor()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="focusoverlay" id="focusOverlay">
+  <div class="ring">
+    <svg width="220" height="220" viewBox="0 0 220 220">
+      <circle cx="110" cy="110" r="96" fill="none" stroke="var(--steel)" stroke-width="6" stroke-dasharray="4 6"/>
+      <circle id="focusArc" cx="110" cy="110" r="96" fill="none" stroke="var(--lemon)" stroke-width="6" stroke-linecap="round" stroke-dasharray="0 603"/>
+    </svg>
+    <div class="center"><div class="time" id="focusTime">00:00</div><div class="sub" id="focusSub">remaining</div></div>
+  </div>
+  <div style="margin-top:16px;color:var(--ash);font-size:13px;" id="focusTitle"></div>
+  <div class="focuscontrols">
+    <button class="btn secondary" onclick="togglePause()">Pause</button>
+    <button class="btn primary" onclick="endFocus()">End</button>
+  </div>
+</div>
+
+<script>
+const CATS=[
+ {id:'deep_work',name:'Deep work',color:'var(--catDeep)'},
+ {id:'meetings',name:'Meetings',color:'var(--catMeet)'},
+ {id:'study',name:'Study',color:'var(--catStudy)'},
+ {id:'health',name:'Health',color:'var(--catHealth)'},
+ {id:'admin',name:'Admin',color:'var(--catAdmin)'},
+ {id:'personal',name:'Personal',color:'var(--catPersonal)'},
+];
+const catColor=id=>(CATS.find(c=>c.id===id)||CATS[0]).color;
+const catName=id=>(CATS.find(c=>c.id===id)||CATS[0]).name;
+
+let blocks=[]; let settings={}; let currentEditing=null; let currentDate=new Date();
+let dragging=null;
+let focusState=null; let focusTimer=null; let focusPaused=false; let focusElapsed=0;
+
+function uid(){return 'b'+Math.random().toString(36).slice(2,10);}
+function dateKey(d){return d.toISOString().slice(0,10);}
+function todayKey(){return dateKey(currentDate);}
+function mins(t){const [h,m]=t.split(':').map(Number);return h*60+m;}
+function fmt(m){const h=Math.floor(m/60);const mm=((m%60)+60)%60;return String(h).padStart(2,'0')+':'+String(mm).padStart(2,'0');}
+function fmtDur(m){const h=Math.floor(m/60);const mm=m%60;return (h?h+'h ':'')+mm+'m';}
+function snap(m){const s=settings.snapMinutes||5;return Math.round(m/s)*s;}
+
+function load(){try{const r=localStorage.getItem('lemontrack:v1');if(r){const d=JSON.parse(r);blocks=d.blocks||[];settings=d.settings||{};}}catch(e){} if(!settings.seeded){seed();settings.seeded=true;save();}}
+function save(){localStorage.setItem('lemontrack:v1',JSON.stringify({blocks,settings}));}
+
+function seed(){
+ const d=todayKey(); const mk=(t,s,e,cat,trk=0,status='planned',src='seed')=>({id:uid(),title:t,notes:'',start:s,end:e,date:d,categoryId:cat,status,trackedSeconds:trk,priority:1,source:src,createdAt:Date.now(),updatedAt:Date.now(),deletedAt:null});
+ blocks.push(mk('Morning review','08:30','09:00','admin'));
+ blocks.push(mk('Thesis draft','09:00','11:00','deep_work',4800,'done'));
+ blocks.push(mk('Standup','11:00','11:30','meetings'));
+ blocks.push(mk('Reading: distributed systems','13:00','14:30','study'));
+ blocks.push(mk('Gym','15:00','15:45','health'));
+ blocks.push(mk('Email and invoices','16:00','17:00','admin'));
+ blocks.push(mk('Client call','16:30','17:15','meetings'));
+ blocks.push(mk('Call with Ana','17:00','17:30','meetings'));
+}
+
+function dayBlocks(dk){return blocks.filter(b=>b.date===dk && !b.deletedAt);}
+function conflictsFor(b){return dayBlocks(b.date).filter(o=>o.id!==b.id && mins(b.start)<mins(o.end) && mins(o.start)<mins(b.end));}
+
+function renderTotals(){
+ const dk=todayKey(); const bs=dayBlocks(dk);
+ const planned=bs.reduce((a,b)=>a+(mins(b.end)-mins(b.start)),0);
+ const tracked=bs.reduce((a,b)=>a+b.trackedSeconds/60,0);
+ document.getElementById('tPlanned').textContent=fmtDur(planned);
+ document.getElementById('tTracked').textContent=fmtDur(Math.round(tracked));
+ document.getElementById('tCount').textContent=bs.length;
+ const pct=planned?Math.round((tracked/planned)*100):0;
+ document.getElementById('tFocus').textContent=pct+'%';
+}
+
+function renderTimeline(){
+ const tl=document.getElementById('timeline'); tl.innerHTML='';
+ const startH=6,endH=22;
+ for(let h=startH;h<=endH;h++){const r=document.createElement('div');r.className='hourrow';r.innerHTML=`<div class="hourlabel">${String(h).padStart(2,'0')}:00</div>`;tl.appendChild(r);}
+ const bs=dayBlocks(todayKey());
+ bs.forEach(b=>{
+   const el=document.createElement('div');
+   const isConf=conflictsFor(b).length>0;
+   el.className='block'+(b.status==='done'?' done':'')+(b.status==='inProgress'?' inprog':'')+(isConf?' conflict':'');
+   el.style.top=(mins(b.start)-startH*60)+'px';
+   el.style.height=Math.max(24,(mins(b.end)-mins(b.start)))+'px';
+   el.innerHTML=`<div class="catbar" style="background:${catColor(b.categoryId)}"></div><div class="title">${escapeHtml(b.title)}</div><div class="time">${b.start}-${b.end}</div>`;
+   el.dataset.id=b.id;
+   el.addEventListener('mousedown',onDragStart);
+   el.addEventListener('click',()=>{if(!dragging)openEditor(b.id);});
+   tl.appendChild(el);
+ });
+ const now=new Date(); const nm=now.getHours()*60+now.getMinutes();
+ if(nm>=startH*60 && nm<=endH*60){
+   const nl=document.createElement('div');nl.className='nowline';nl.style.top=(nm-startH*60)+'px';tl.appendChild(nl);
+   const nd=document.createElement('div');nd.className='nowdot';nd.style.top=(nm-startH*60-3)+'px';tl.appendChild(nd);
+ }
+ if(bs.length===0){const e=document.createElement('div');e.className='empty';e.innerHTML='Nothing planned. Ask the chat or tap + to add a block.<br><button class="btn primary" onclick="switchView(\'vChat\',document.querySelector(\'[data-view=vChat]\'))">Open Chat</button>';tl.appendChild(e);}
+ renderTotals();
+ renderNext();
+}
+
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function renderNext(){
+ const bs=dayBlocks(todayKey()).filter(b=>mins(b.start)>=(new Date().getHours()*60+new Date().getMinutes())).sort((a,b)=>mins(a.start)-mins(b.start));
+ const el=document.getElementById('nextTitle'); const sub=document.getElementById('nextSub');
+ if(bs.length){el.textContent=bs[0].title; sub.textContent=bs[0].start+' · '+fmtDur(mins(bs[0].end)-mins(bs[0].start))+' · '+catName(bs[0].categoryId);}else{el.textContent='—';sub.textContent='No upcoming block';}
+}
+
+function onDragStart(e){
+ const id=e.currentTarget.dataset.id;
+ dragging={id, startY:e.clientY, origStart:null};
+ const b=blocks.find(x=>x.id===id);
+ dragging.origStart=b.start; dragging.origEnd=b.end;
+ e.currentTarget.style.cursor='grabbing';
+   const move=(ev)=>{
+   if(!dragging)return;
+   const dy=ev.clientY-dragging.startY;
+   const b=blocks.find(x=>x.id===id);
+   const newStart=snap(mins(dragging.origStart)+dy);
+   const dur=mins(dragging.origEnd)-mins(dragging.origStart);
+   b.start=fmt(newStart); b.end=fmt(newStart+dur);
+   const el=document.querySelector('.block[data-id=\"'+id+'\"]');
+   if(el){el.style.top=(newStart-6*60)+'px';el.querySelector('.time').textContent=b.start+'-'+b.end;}
+ };
+ const up=()=>{
+   document.removeEventListener('mousemove',move);
+   document.removeEventListener('mouseup',up);
+   const b=blocks.find(x=>x.id===id);
+   b.updatedAt=Date.now();
+   logAction('move',b.id,{start:dragging.origStart,end:dragging.origEnd},{start:b.start,end:b.end},'user');
+   dragging=null;
+   save(); renderAll();
+ };
+ document.addEventListener('mousemove',move);
+ document.addEventListener('mouseup',up);
+}
+
+function switchView(id,btn){
+ document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+ if(btn)btn.classList.add('active');
+ if(id==='vWeek')renderWeek();
+ if(id==='vSummary')renderSummary();
+ if(id==='vToday')renderTimeline();
+}
+
+function renderWeek(){
+ const g=document.getElementById('weekgrid'); g.innerHTML='';
+ const base=new Date(currentDate); base.setDate(base.getDate()-base.getDay());
+ for(let i=0;i<7;i++){
+   const d=new Date(base); d.setDate(base.getDate()+i);
+   const dk=dateKey(d);
+   const col=document.createElement('div'); col.className='weekcol';
+   const name=d.toLocaleDateString(undefined,{weekday:'short'});
+   col.innerHTML=`<div class="dayname">${name} ${d.getDate()}</div>`;
+   dayBlocks(dk).forEach(b=>{
+     const wb=document.createElement('div'); wb.className='wblock'; wb.style.borderLeftColor=catColor(b.categoryId);
+     wb.innerHTML=`<div>${escapeHtml(b.title)}</div><div class="wt">${b.start}-${b.end}</div>`;
+     col.appendChild(wb);
+   });
+   g.appendChild(col);
+ }
+}
+
+function renderSummary(){
+ const el=document.getElementById('summary'); 
+ const dk=todayKey(); const bs=dayBlocks(dk);
+ const planned=bs.reduce((a,b)=>a+(mins(b.end)-mins(b.start)),0);
+ const tracked=bs.reduce((a,b)=>a+b.trackedSeconds/60,0);
+ const done=bs.filter(b=>b.status==='done').length;
+ const rate=bs.length?Math.round(done/bs.length*100):0;
+ let html=`<div class="statgrid">
+  <div class="statcard"><div class="sl">Tracked today</div><div class="sv">${fmtDur(Math.round(tracked))}</div><div class="sd">vs ${fmtDur(planned)} planned</div></div>
+  <div class="statcard"><div class="sl">Completion</div><div class="sv">${rate}%</div><div class="sd">${done}/${bs.length} blocks</div></div>
+ </div>`;
+ html+=`<div style="font-size:11px;color:var(--ash);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 6px;">Last 14 days</div><div class="candles">`;
+ const today=new Date();
+ for(let i=13;i>=0;i--){
+   const d=new Date(today); d.setDate(today.getDate()-i);
+   const k=dateKey(d);
+   const dbs=dayBlocks(k);
+   const p=dbs.reduce((a,b)=>a+(mins(b.end)-mins(b.start)),0);
+   const t=dbs.reduce((a,b)=>a+b.trackedSeconds/60,0);
+   const maxP=600; const ph=Math.max(2,(p/maxP)*100); const th=Math.max(0,(t/maxP)*100);
+   const color=t>=p&&p>0?'var(--up)':(p>0?'var(--coral)':'var(--steel)');
+   html+=`<div class="candle"><div class="bar" style="height:${ph}px;background:var(--steel);opacity:.4"></div><div class="bar" style="height:${th}px;background:${color};margin-top:-${th}px;"></div><div class="lbl">${d.getDate()}</div></div>`;
+ }
+ html+=`</div>`;
+ html+=`<div style="font-size:11px;color:var(--ash);text-transform:uppercase;letter-spacing:.6px;margin:12px 0 6px;">By category</div>`;
+ CATS.forEach(c=>{
+   const cb=bs.filter(b=>b.categoryId===c.id);
+   const m=cb.reduce((a,b)=>a+(mins(b.end)-mins(b.start)),0);
+   if(m===0)return;
+   const pct=Math.round(m/planned*100);
+   html+=`<div class="catbarrow"><div class="cname">${c.name}</div><div class="cbar"><div class="cfill" style="width:${pct}%;background:${c.color}"></div></div><div class="cmin">${fmtDur(m)}</div></div>`;
+ });
+ el.innerHTML=html;
+}
+
+function openEditor(id=null){
+ currentEditing=id;
+ const b=id?blocks.find(x=>x.id===id):null;
+ document.getElementById('editorTitle').textContent=id?'Edit block':'New block';
+ document.getElementById('eTitle').value=b?b.title:'';
+ document.getElementById('eStart').value=b?b.start:'09:00';
+ document.getElementById('eDur').value=b?(mins(b.end)-mins(b.start)):30;
+ document.getElementById('eNotes').value=b?b.notes:'';
+ document.getElementById('eDelete').style.display=id?'inline-block':'none';
+ const sel=b?b.categoryId:'deep_work';
+ const cr=document.getElementById('eCats'); cr.innerHTML='';
+ CATS.forEach(c=>{
+   const p=document.createElement('div'); p.className='catpill'+(c.id===sel?' active':''); p.textContent=c.name; p.style.borderColor=c.id===sel?c.color:'';
+   p.onclick=()=>{cr.querySelectorAll('.catpill').forEach(x=>x.classList.remove('active')); p.classList.add('active');};
+   p.dataset.id=c.id;
+   cr.appendChild(p);
+ });
+ document.getElementById('eConflict').textContent='';
+ document.getElementById('editorBackdrop').classList.add('open');
+}
+function closeEditor(){document.getElementById('editorBackdrop').classList.remove('open');currentEditing=null;}
+function selectedCat(){const a=document.querySelector('#eCats .catpill.active');return a?a.dataset.id:'deep_work';}
+function saveEditor(){
+ const title=document.getElementById('eTitle').value.trim();
+ if(!title){alert('Title required');return;}
+ const start=document.getElementById('eStart').value.trim();
+ const dur=parseInt(document.getElementById('eDur').value,10)||30;
+ const end=fmt(mins(start)+dur);
+ const cat=selectedCat();
+ const notes=document.getElementById('eNotes').value;
+ const now=Date.now();
+ if(currentEditing){
+   const b=blocks.find(x=>x.id===currentEditing);
+   const before={title:b.title,start:b.start,end:b.end,categoryId:b.categoryId,notes:b.notes};
+   b.title=title;b.start=start;b.end=end;b.categoryId=cat;b.notes=notes;b.updatedAt=now;
+   logAction('update',b.id,before,{title,start,end,categoryId:cat,notes},'user');
+ }else{
+   const b={id:uid(),title,start,end,date:todayKey(),categoryId:cat,status:'planned',trackedSeconds:0,priority:1,source:'user',notes,createdAt:now,updatedAt:now,deletedAt:null};
+   blocks.push(b);
+   logAction('create',b.id,null,{title,start,end,categoryId:cat},'user');
+ }
+ save();
+ closeEditor();
+ renderAll();
+}
+function deleteEditing(){
+ if(!currentEditing)return;
+ const b=blocks.find(x=>x.id===currentEditing);
+ b.deletedAt=Date.now(); b.updatedAt=Date.now();
+ logAction('delete',b.id,{title:b.title,start:b.start,end:b.end},null,'user');
+ save(); closeEditor(); renderAll();
+}
+
+let actionLog=[]; 
+function logAction(kind,blockId,before,after,actor){
+ actionLog.unshift({id:uid(),at:Date.now(),actor,kind,blockId,before,after,undone:false});
+ if(actionLog.length>50)actionLog.pop();
+}
+
+function addBlock(title,start,end,cat='deep_work',source='user'){
+ const b={id:uid(),title,start,end,date:todayKey(),categoryId:cat,status:'planned',trackedSeconds:0,priority:1,source,notes:'',createdAt:Date.now(),updatedAt:Date.now(),deletedAt:null};
+ blocks.push(b);
+ const isConf=conflictsFor(b).length>0;
+ if(isConf) pushChat('assistant','Conflict: '+title+' overlaps an existing block.');
+ return b;
+}
+
+const chatMessages=[];
+function pushChat(role,text,card=null){
+ chatMessages.push({role,text,card});
+ renderChat();
+}
+function renderChat(){
+ const log=document.getElementById('chatLog'); log.innerHTML='';
+ chatMessages.forEach(m=>{
+   if(m.role==='user'){const d=document.createElement('div');d.className='bubble user';d.textContent=m.text;log.appendChild(d);}
+   else if(m.role==='assistant'){const d=document.createElement('div');d.className='bubble assistant';d.textContent=m.text;log.appendChild(d);}
+   if(m.card){const c=document.createElement('div');c.className='diffcard';
+     c.innerHTML=`<div class="action">${m.card.action}</div>`+
+       (m.card.rows||[]).map(r=>`<div class="row">${r}</div>`).join('')+
+       (m.card.conflicts&&m.card.conflicts.length?`<div class="conflict">Conflicts: ${m.card.conflicts.join(', ')}</div>`:'')+
+       `<button onclick="undoCard('${m.card.logId}')">Undo</button>`;
+     log.appendChild(c);
+   }
+ });
+ log.scrollTop=log.scrollHeight;
+ if(chatMessages.length===0){
+   document.getElementById('chips').innerHTML=['What\'s left today?','Move my afternoon back 30 min','Find 45 min tomorrow','Summarize my day'].map(q=>`<div class="chip" onclick="quickPrompt('${q}')">${q}</div>`).join('');
+ }else{document.getElementById('chips').innerHTML='';}
+}
+function quickPrompt(q){document.getElementById('chatInput').value=q;sendChat();}
+function sendChat(){
+ const v=document.getElementById('chatInput').value.trim(); if(!v)return;
+ document.getElementById('chatInput').value='';
+ pushChat('user',v);
+ handleCommand(v);
+}
+function handleCommand(raw){
+ const m=raw.toLowerCase().trim();
+ // create
+ let match=m.match(/^create (.+?) (\d{1,2}:\d{2}) (\d{1,2}:\d{2})(?: (.+))?$/);
+ if(match){
+   const title=match[1]; const cat=match[4]?match[4].trim():'deep_work';
+   const c=CATS.find(x=>x.name.toLowerCase().includes(cat)||x.id.includes(cat))||CATS[0];
+   const b=addBlock(title,match[2],match[3],c.id,'ai');
+   const isConf=conflictsFor(b).length>0;
+   pushChat('assistant','Created '+title+'.');
+   pushChat('assistant','', {action:'Created',rows:[`${title}: ${match[2]} → ${match[3]}`],conflicts:isConf?[title]:[],logId:actionLog[0].id});
+   save(); renderAll(); return;
+ }
+ // move
+ match=m.match(/^move (.+?) to (\d{1,2}:\d{2})$/);
+ if(match){
+   const q=match[1]; const ns=match[2];
+   const b=blocks.find(x=>x.title.toLowerCase().includes(q) && !x.deletedAt && x.date===todayKey());
+   if(!b){pushChat('assistant','No block matching "'+q+'".');return;}
+   const dur=mins(b.end)-mins(b.start);
+   const before={start:b.start,end:b.end};
+   const ne=fmt(mins(ns)+dur);
+   b.start=ns;b.end=ne;b.updatedAt=Date.now();
+   logAction('move',b.id,before,{start:ns,end:ne},'ai');
+   const isConf=conflictsFor(b).length>0;
+   pushChat('assistant','Moved '+b.title+' to '+ns+'.');
+   pushChat('assistant','', {action:'Moved',rows:[`${b.title}: ${before.start} → ${ns}`],conflicts:isConf?[b.title]:[],logId:actionLog[0].id});
+   save(); renderAll(); return;
+ }
+ // shift afternoon
+ match=m.match(/(?:move|shift) (?:my )?afternoon (?:back|by) (\d+) ?min/);
+ if(match){
+   const delta=parseInt(match[1],10);
+   const affected=blocks.filter(b=>b.date===todayKey() && !b.deletedAt && mins(b.start)>=12*60);
+   const before=affected.map(b=>({id:b.id,start:b.start,end:b.end}));
+   affected.forEach(b=>{b.start=fmt(mins(b.start)+delta); b.end=fmt(mins(b.end)+delta); b.updatedAt=Date.now();});
+   logAction('shift',null,before,affected.map(b=>({id:b.id,start:b.start,end:b.end})),'ai');
+   pushChat('assistant','Shifted '+affected.length+' afternoon blocks by '+delta+' min.');
+   pushChat('assistant','', {action:`Shifted ${affected.length} blocks`,rows:affected.map(b=>`${b.title}: +${delta}m`),conflicts:[],logId:actionLog[0].id});
+   save(); renderAll(); return;
+ }
+ // delete
+ match=m.match(/^delete (.+)$/);
+ if(match){
+   const q=match[1];
+   const b=blocks.find(x=>x.title.toLowerCase().includes(q) && !x.deletedAt && x.date===todayKey());
+   if(!b){pushChat('assistant','No block matching "'+q+'".');return;}
+   const before={title:b.title,start:b.start,end:b.end};
+   b.deletedAt=Date.now();
+   logAction('delete',b.id,before,null,'ai');
+   pushChat('assistant','Deleted '+b.title+'.');
+   pushChat('assistant','', {action:'Deleted',rows:[`${b.title}: ${before.start}-${before.end}`],conflicts:[],logId:actionLog[0].id});
+   save(); renderAll(); return;
+ }
+ // complete
+ match=m.match(/^(?:complete|done) (.+)$/);
+ if(match){
+   const q=match[1];
+   const b=blocks.find(x=>x.title.toLowerCase().includes(q) && !x.deletedAt && x.date===todayKey());
+   if(!b){pushChat('assistant','No block matching "'+q+'".');return;}
+   b.status='done'; b.updatedAt=Date.now();
+   logAction('complete',b.id,{status:'planned'},{status:'done'},'ai');
+   pushChat('assistant','Marked '+b.title+' done.');
+   pushChat('assistant','', {action:'Completed',rows:[b.title],conflicts:[],logId:actionLog[0].id});
+   save(); renderAll(); return;
+ }
+ // list / what's left
+ if(/what'?s left|list|today/.test(m)){
+   const bs=dayBlocks(todayKey()).sort((a,b)=>mins(a.start)-mins(b.start));
+   if(!bs.length){pushChat('assistant','Nothing planned today.');return;}
+   pushChat('assistant',bs.map(b=>`${b.start} ${b.title} (${fmtDur(mins(b.end)-mins(b.start))})`).join('\n'));
+   return;
+ }
+ // find free slot
+ match=m.match(/find (\d+) ?min/);
+ if(match){
+   const need=parseInt(match[1],10);
+   const bs=dayBlocks(todayKey()).sort((a,b)=>mins(a.start)-mins(b.start));
+   let cursor=6*60; let found=null;
+   for(const b of bs){if(mins(b.start)-cursor>=need){found={s:cursor,e:cursor+need};break;} cursor=Math.max(cursor,mins(b.end));}
+   if(!found && (22*60-cursor)>=need) found={s:cursor,e:cursor+need};
+   if(found){pushChat('assistant','Free slot: '+fmt(found.s)+'–'+fmt(found.e));}
+   else pushChat('assistant','No free slot of '+need+' min today.');
+   return;
+ }
+ // summary
+ if(/summar/.test(m)){
+   const bs=dayBlocks(todayKey());
+   const planned=bs.reduce((a,b)=>a+(mins(b.end)-mins(b.start)),0);
+   const tracked=bs.reduce((a,b)=>a+b.trackedSeconds/60,0);
+   const done=bs.filter(b=>b.status==='done').length;
+   pushChat('assistant',`Blocks: ${bs.length} | Planned ${fmtDur(planned)} | Tracked ${fmtDur(Math.round(tracked))} | Done ${done}/${bs.length}`);
+   return;
+ }
+ pushChat('assistant','Try: create deep work 09:00 11:00, move deep work to 15:30, shift afternoon back 30 min, find 45 min, summary');
+}
+
+function undoCard(logId){
+ const entry=actionLog.find(a=>a.id===logId);
+ if(!entry||entry.undone){pushChat('assistant','Already undone.');return;}
+ entry.undone=true;
+ if(entry.kind==='create'){
+   const b=blocks.find(x=>x.id===entry.blockId); if(b)b.deletedAt=Date.now();
+ }else if(entry.kind==='delete'){
+   const b=blocks.find(x=>x.id===entry.blockId); if(b)b.deletedAt=null;
+ }else if(entry.kind==='move'||entry.kind==='update'){
+   const b=blocks.find(x=>x.id===entry.blockId);
+   if(b && entry.before){ if(entry.before.start)b.start=entry.before.start; if(entry.before.end)b.end=entry.before.end; if(entry.before.title)b.title=entry.before.title; if(entry.before.categoryId)b.categoryId=entry.before.categoryId; if(entry.before.notes!==undefined)b.notes=entry.before.notes;}
+ }else if(entry.kind==='shift'){
+   const before=entry.before||[];
+   before.forEach(s=>{const b=blocks.find(x=>x.id===s.id); if(b){b.start=s.start;b.end=s.end;}});
+ }else if(entry.kind==='complete'){
+   const b=blocks.find(x=>x.id===entry.blockId); if(b)b.status='planned';
+ }
+ save(); renderAll(); pushChat('assistant','Undone.');
+}
+
+function renderAll(){renderTimeline();renderTotals();renderWeek();renderSummary();}
+
+// Focus
+function startFocus(id){
+ const b=blocks.find(x=>x.id===id); if(!b)return;
+ focusState={blockId:id,planned:mins(b.end)-mins(b.start),paused:false};
+ focusElapsed=b.trackedSeconds||0;
+ focusPaused=false;
+ document.getElementById('focusTitle').textContent=b.title;
+ document.getElementById('focusOverlay').classList.add('open');
+ updateFocusUI();
+ focusTimer=setInterval(()=>{if(!focusPaused){focusElapsed++;updateFocusUI();}},1000);
+}
+function updateFocusUI(){
+ const b=blocks.find(x=>x.id===focusState.blockId);
+ const rem=Math.max(0,focusState.planned*60-focusElapsed);
+ const m=Math.floor(rem/60),s=rem%60;
+ document.getElementById('focusTime').textContent=String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+ const circ=2*Math.PI*96;
+ const frac=focusState.planned*60?focusElapsed/(focusState.planned*60):0;
+ document.getElementById('focusArc').setAttribute('stroke-dasharray',`${Math.min(1,frac)*circ} ${circ}`);
+ document.getElementById('focusSub').textContent='tracked '+fmtDur(Math.floor(focusElapsed/60))+' of '+fmtDur(focusState.planned);
+}
+function togglePause(){focusPaused=!focusPaused;}
+function endFocus(){
+ clearInterval(focusTimer); focusTimer=null;
+ const b=blocks.find(x=>x.id===focusState.blockId);
+ if(b){b.trackedSeconds=focusElapsed;b.status='inProgress';b.updatedAt=Date.now();save();}
+ document.getElementById('focusOverlay').classList.remove('open');
+ focusState=null;
+ renderAll();
+}
+// hook focus from block click? add long press? We'll add button in editor? Instead add context: tap block opens editor; focus via chat? Add simple: double-click block starts focus.
+// attach in renderTimeline by adding dblclick
+// We'll patch: in renderTimeline block creation add dblclick listener after creation? Already have click. Add:
+// modify: el.addEventListener('dblclick',()=>startFocus(b.id));
+
+load();
+// patch renderTimeline to include dblclick for focus
+const _origRenderTimeline=renderTimeline;
+// Instead, monkey: override by editing? We'll just add listener in a patched version by redefining renderTimeline fully is heavy. Use event delegation:
+document.getElementById('timeline').addEventListener('dblclick',e=>{
+ const el=e.target.closest('.block'); if(el && el.dataset.id) startFocus(el.dataset.id);
+});
+
+document.getElementById('dateLabel').textContent=currentDate.toDateString();
+renderAll();
+pushChat('assistant','LemonTrack ready. Try "create deep work 09:00 11:00" or use the + button.');
+</script>
+</body>
+</html>

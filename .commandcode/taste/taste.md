@@ -1,0 +1,2 @@
+- Prefers Plus Jakarta Sans as the default font. Confidence: 0.9
+- Wants apps to run on real, user-entered persisted data — no auto-seeded fake/demo content on launch; demo data may exist only as an explicit opt-in action. Confidence: 0.7
